@@ -75,7 +75,7 @@ class Orgs:
         Example:
             Example usage:
 
-                orgs.assume_role('098765432109', 'demo')
+                assumed_credentials = orgs.assume_role('098765432109', 'demo')
                 {'AccessKeyId': 'ASIATWQY7MABPWBJYKGX',
                  'Expiration': datetime.datetime(2020, 3, 25, 12, 30, 57, tzinfo=tzutc()),
                  'SecretAccessKey': 'kKJ(324kljd,sfs.sl32423489/dakwu423nsdf',
@@ -106,3 +106,35 @@ class Orgs:
     def _aws_exception_msg(e):
         msg = e.response['Error']['Message']
         sys.exit(f'Error: {msg}')
+
+    def get_assumed_client(self, service_name, assumed_credentials, **kwargs):
+        """Description:
+            Creates a client object using an assumed role
+
+        Args:
+            service_name (str): AWS service name
+            assumed_credentials (dict): `assume_role` dict
+            kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role('098765432109', 'demo')
+                assumed_s3 = orgs.get_assumed_client('s3', assumed_credentials)
+                bucket_list = assumed_s3.list_buckets()
+
+        Returns:
+            Boto3 client
+        """
+
+        self.logger.entry('info', f'Creating "{service_name}" client object...')
+
+        assumed_client = boto3.client(
+            service_name,
+            aws_access_key_id=assumed_credentials['AccessKeyId'],
+            aws_secret_access_key=assumed_credentials['SecretAccessKey'],
+            aws_session_token=assumed_credentials['SessionToken'],
+            **kwargs,
+        )
+
+        return assumed_client
