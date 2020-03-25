@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.5" />
+<title>onnawsorgs.orgs API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>onnawsorgs.orgs</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import boto3
+import sys
+from botocore.exceptions import ClientError
+from pprint import pformat
+
+
+class Orgs:
+    def __init__(self, logger):
+        &#34;&#34;&#34;Description:
+            Convenience Python module for AWS Organisations
+
+        Args:
+            logger (onnlogger.Loggers): An instance of `onnlogger.Loggers`
+
+        Example:
+            Example usage:
+
+                from onnlogger import Loggers
+
+                logger = Loggers(logger_name=&#39;Orgs&#39;, console_logger=True, log_level=&#39;INFO&#39;, log_file_path=&#39;/tmp/log&#39;)
+                orgs = Orgs(logger)
+        &#34;&#34;&#34;
+        self.logger = logger
+        self.org = boto3.client(&#39;organizations&#39;)
+        self.sts = boto3.client(&#39;sts&#39;)
+
+    def get_aws_accounts(self) -&gt; list:
+        &#34;&#34;&#34;Description:
+            List of all AWS Organization accounts
+
+            Automatically paginates through all AWS accounts and returns the results as a list
+
+        Example:
+            Example usage:
+
+                account_list = orgs.get_aws_accounts()
+                print(account_list)
+                [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
+                 &#39;Email&#39;: &#39;example@example.com&#39;,
+                 &#39;Id&#39;: &#39;123456789012&#39;,
+                 &#39;JoinedMethod&#39;: &#39;CREATED&#39;,
+                 &#39;JoinedTimestamp&#39;: datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
+                 &#39;Name&#39;: &#39;John Doe&#39;,
+                 &#39;Status&#39;: &#39;ACTIVE&#39;}]
+
+        Returns:
+            [List of all AWS Organization accounts](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts)
+        &#34;&#34;&#34;
+        next_token = dict()
+        account_info = []
+
+        self.logger.entry(&#39;info&#39;, &#39;Getting AWS Organization account numbers...&#39;)
+        while True:
+            accounts = self.org.list_accounts(**next_token)
+            found_accounts = accounts[&#39;Accounts&#39;]
+            account_info = account_info + found_accounts
+            get_token = accounts.get(&#39;NextToken&#39;)
+
+            if get_token:
+                next_token[&#39;NextToken&#39;] = get_token
+
+            else:
+                break
+
+        return account_info
+
+    def assume_role(self, account_id, role_session_name, account_role=&#39;OrganizationAccountAccessRole&#39;) -&gt; dict:
+        &#34;&#34;&#34;Description:
+            Assumes a role in an another account
+
+        Args:
+            account_id (str): ID of the account assuming into
+            role_session_name (str): Name of the assume session
+            account_role (str): Account to assume in `account_id`
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+                {&#39;AccessKeyId&#39;: &#39;ASIATWQY7MABPWBJYKGX&#39;,
+                 &#39;Expiration&#39;: datetime.datetime(2020, 3, 25, 12, 30, 57, tzinfo=tzutc()),
+                 &#39;SecretAccessKey&#39;: &#39;kKJ(324kljd,sfs.sl32423489/dakwu423nsdf&#39;,
+                 &#39;SessionToken&#39;: &#39;FwoGZf35YXdzEI3//////////wEaDBQJZuRBd0ja6UFC&#39;}
+
+
+        Returns:
+            [Temporary API credentials](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sts.html#STS.Client.assume_role)
+        &#34;&#34;&#34;
+        role_arn = f&#39;arn:aws:iam::{account_id}:role/{account_role}&#39;
+        self.logger.entry(&#39;info&#39;, f&#39;Assuming role ARN: {role_arn}...&#39;)
+
+        try:
+            assumed_role_object = self.sts.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name,
+            )
+
+            assumed_credentials = assumed_role_object[&#39;Credentials&#39;]
+            self.logger.entry(&#39;debug&#39;, f&#39;Assumed credentials:\n{pformat(assumed_credentials)}&#39;)
+
+            return assumed_credentials
+
+        except ClientError as e:
+            self._aws_exception_msg(e)
+
+    @staticmethod
+    def _aws_exception_msg(e):
+        msg = e.response[&#39;Error&#39;][&#39;Message&#39;]
+        sys.exit(f&#39;Error: {msg}&#39;)
+
+    def get_assumed_client(self, service_name, assumed_credentials, **kwargs):
+        &#34;&#34;&#34;Description:
+            Creates a client object using an assumed role
+
+        Args:
+            service_name (str): AWS service name
+            assumed_credentials (dict): `assume_role` dict
+            kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+                assumed_s3 = orgs.get_assumed_client(&#39;s3&#39;, assumed_credentials)
+                bucket_list = assumed_s3.list_buckets()
+
+        Returns:
+            Boto3 client
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, f&#39;Creating &#34;{service_name}&#34; client object...&#39;)
+
+        assumed_client = boto3.client(
+            service_name,
+            aws_access_key_id=assumed_credentials[&#39;AccessKeyId&#39;],
+            aws_secret_access_key=assumed_credentials[&#39;SecretAccessKey&#39;],
+            aws_session_token=assumed_credentials[&#39;SessionToken&#39;],
+            **kwargs,
+        )
+
+        return assumed_client
+
+    def get_assumed_resource(self, service_name, assumed_credentials, **kwargs):
+        &#34;&#34;&#34;Description:
+            Creates a resource object using an assumed role
+
+        Args:
+            service_name (str): AWS service name
+            assumed_credentials (dict): `assume_role` dict
+            kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+                assumed_s3 = orgs.get_assumed_client(&#39;s3&#39;, assumed_credentials)
+                bucket_list = assumed_s3.buckets.all()
+                for bucket in bucket_list:
+                    print(bucket_object)
+
+        Returns:
+            Boto3 resource
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, f&#39;Creating &#34;{service_name}&#34; resource object...&#39;)
+
+        assumed_resource = boto3.resource(
+            service_name,
+            aws_access_key_id=assumed_credentials[&#39;AccessKeyId&#39;],
+            aws_secret_access_key=assumed_credentials[&#39;SecretAccessKey&#39;],
+            aws_session_token=assumed_credentials[&#39;SessionToken&#39;],
+            **kwargs,
+        )
+
+        return assumed_resource</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="onnawsorgs.orgs.Orgs"><code class="flex name class">
+<span>class <span class="ident">Orgs</span></span>
+<span>(</span><span>logger)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Convenience Python module for AWS Organisations</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>logger</code></strong> :&ensp;<code>onnlogger.Loggers</code></dt>
+<dd>An instance of <code>onnlogger.Loggers</code></dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>from onnlogger import Loggers
+
+logger = Loggers(logger_name='Orgs', console_logger=True, log_level='INFO', log_file_path='/tmp/log')
+orgs = Orgs(logger)
+</code></pre></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Orgs:
+    def __init__(self, logger):
+        &#34;&#34;&#34;Description:
+            Convenience Python module for AWS Organisations
+
+        Args:
+            logger (onnlogger.Loggers): An instance of `onnlogger.Loggers`
+
+        Example:
+            Example usage:
+
+                from onnlogger import Loggers
+
+                logger = Loggers(logger_name=&#39;Orgs&#39;, console_logger=True, log_level=&#39;INFO&#39;, log_file_path=&#39;/tmp/log&#39;)
+                orgs = Orgs(logger)
+        &#34;&#34;&#34;
+        self.logger = logger
+        self.org = boto3.client(&#39;organizations&#39;)
+        self.sts = boto3.client(&#39;sts&#39;)
+
+    def get_aws_accounts(self) -&gt; list:
+        &#34;&#34;&#34;Description:
+            List of all AWS Organization accounts
+
+            Automatically paginates through all AWS accounts and returns the results as a list
+
+        Example:
+            Example usage:
+
+                account_list = orgs.get_aws_accounts()
+                print(account_list)
+                [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
+                 &#39;Email&#39;: &#39;example@example.com&#39;,
+                 &#39;Id&#39;: &#39;123456789012&#39;,
+                 &#39;JoinedMethod&#39;: &#39;CREATED&#39;,
+                 &#39;JoinedTimestamp&#39;: datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
+                 &#39;Name&#39;: &#39;John Doe&#39;,
+                 &#39;Status&#39;: &#39;ACTIVE&#39;}]
+
+        Returns:
+            [List of all AWS Organization accounts](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts)
+        &#34;&#34;&#34;
+        next_token = dict()
+        account_info = []
+
+        self.logger.entry(&#39;info&#39;, &#39;Getting AWS Organization account numbers...&#39;)
+        while True:
+            accounts = self.org.list_accounts(**next_token)
+            found_accounts = accounts[&#39;Accounts&#39;]
+            account_info = account_info + found_accounts
+            get_token = accounts.get(&#39;NextToken&#39;)
+
+            if get_token:
+                next_token[&#39;NextToken&#39;] = get_token
+
+            else:
+                break
+
+        return account_info
+
+    def assume_role(self, account_id, role_session_name, account_role=&#39;OrganizationAccountAccessRole&#39;) -&gt; dict:
+        &#34;&#34;&#34;Description:
+            Assumes a role in an another account
+
+        Args:
+            account_id (str): ID of the account assuming into
+            role_session_name (str): Name of the assume session
+            account_role (str): Account to assume in `account_id`
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+                {&#39;AccessKeyId&#39;: &#39;ASIATWQY7MABPWBJYKGX&#39;,
+                 &#39;Expiration&#39;: datetime.datetime(2020, 3, 25, 12, 30, 57, tzinfo=tzutc()),
+                 &#39;SecretAccessKey&#39;: &#39;kKJ(324kljd,sfs.sl32423489/dakwu423nsdf&#39;,
+                 &#39;SessionToken&#39;: &#39;FwoGZf35YXdzEI3//////////wEaDBQJZuRBd0ja6UFC&#39;}
+
+
+        Returns:
+            [Temporary API credentials](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sts.html#STS.Client.assume_role)
+        &#34;&#34;&#34;
+        role_arn = f&#39;arn:aws:iam::{account_id}:role/{account_role}&#39;
+        self.logger.entry(&#39;info&#39;, f&#39;Assuming role ARN: {role_arn}...&#39;)
+
+        try:
+            assumed_role_object = self.sts.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name,
+            )
+
+            assumed_credentials = assumed_role_object[&#39;Credentials&#39;]
+            self.logger.entry(&#39;debug&#39;, f&#39;Assumed credentials:\n{pformat(assumed_credentials)}&#39;)
+
+            return assumed_credentials
+
+        except ClientError as e:
+            self._aws_exception_msg(e)
+
+    @staticmethod
+    def _aws_exception_msg(e):
+        msg = e.response[&#39;Error&#39;][&#39;Message&#39;]
+        sys.exit(f&#39;Error: {msg}&#39;)
+
+    def get_assumed_client(self, service_name, assumed_credentials, **kwargs):
+        &#34;&#34;&#34;Description:
+            Creates a client object using an assumed role
+
+        Args:
+            service_name (str): AWS service name
+            assumed_credentials (dict): `assume_role` dict
+            kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+                assumed_s3 = orgs.get_assumed_client(&#39;s3&#39;, assumed_credentials)
+                bucket_list = assumed_s3.list_buckets()
+
+        Returns:
+            Boto3 client
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, f&#39;Creating &#34;{service_name}&#34; client object...&#39;)
+
+        assumed_client = boto3.client(
+            service_name,
+            aws_access_key_id=assumed_credentials[&#39;AccessKeyId&#39;],
+            aws_secret_access_key=assumed_credentials[&#39;SecretAccessKey&#39;],
+            aws_session_token=assumed_credentials[&#39;SessionToken&#39;],
+            **kwargs,
+        )
+
+        return assumed_client
+
+    def get_assumed_resource(self, service_name, assumed_credentials, **kwargs):
+        &#34;&#34;&#34;Description:
+            Creates a resource object using an assumed role
+
+        Args:
+            service_name (str): AWS service name
+            assumed_credentials (dict): `assume_role` dict
+            kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+                assumed_s3 = orgs.get_assumed_client(&#39;s3&#39;, assumed_credentials)
+                bucket_list = assumed_s3.buckets.all()
+                for bucket in bucket_list:
+                    print(bucket_object)
+
+        Returns:
+            Boto3 resource
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, f&#39;Creating &#34;{service_name}&#34; resource object...&#39;)
+
+        assumed_resource = boto3.resource(
+            service_name,
+            aws_access_key_id=assumed_credentials[&#39;AccessKeyId&#39;],
+            aws_secret_access_key=assumed_credentials[&#39;SecretAccessKey&#39;],
+            aws_session_token=assumed_credentials[&#39;SessionToken&#39;],
+            **kwargs,
+        )
+
+        return assumed_resource</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="onnawsorgs.orgs.Orgs.assume_role"><code class="name flex">
+<span>def <span class="ident">assume_role</span></span>(<span>self, account_id, role_session_name, account_role='OrganizationAccountAccessRole')</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Assumes a role in an another account</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>account_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>ID of the account assuming into</dd>
+<dt><strong><code>role_session_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the assume session</dd>
+<dt><strong><code>account_role</code></strong> :&ensp;<code>str</code></dt>
+<dd>Account to assume in <code>account_id</code></dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>assumed_credentials = orgs.assume_role('098765432109', 'demo')
+{'AccessKeyId': 'ASIATWQY7MABPWBJYKGX',
+ 'Expiration': datetime.datetime(2020, 3, 25, 12, 30, 57, tzinfo=tzutc()),
+ 'SecretAccessKey': 'kKJ(324kljd,sfs.sl32423489/dakwu423nsdf',
+ 'SessionToken': 'FwoGZf35YXdzEI3//////////wEaDBQJZuRBd0ja6UFC'}
+</code></pre>
+<h2 id="returns">Returns</h2>
+<p><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sts.html#STS.Client.assume_role">Temporary API credentials</a></p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def assume_role(self, account_id, role_session_name, account_role=&#39;OrganizationAccountAccessRole&#39;) -&gt; dict:
+    &#34;&#34;&#34;Description:
+        Assumes a role in an another account
+
+    Args:
+        account_id (str): ID of the account assuming into
+        role_session_name (str): Name of the assume session
+        account_role (str): Account to assume in `account_id`
+
+    Example:
+        Example usage:
+
+            assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+            {&#39;AccessKeyId&#39;: &#39;ASIATWQY7MABPWBJYKGX&#39;,
+             &#39;Expiration&#39;: datetime.datetime(2020, 3, 25, 12, 30, 57, tzinfo=tzutc()),
+             &#39;SecretAccessKey&#39;: &#39;kKJ(324kljd,sfs.sl32423489/dakwu423nsdf&#39;,
+             &#39;SessionToken&#39;: &#39;FwoGZf35YXdzEI3//////////wEaDBQJZuRBd0ja6UFC&#39;}
+
+
+    Returns:
+        [Temporary API credentials](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sts.html#STS.Client.assume_role)
+    &#34;&#34;&#34;
+    role_arn = f&#39;arn:aws:iam::{account_id}:role/{account_role}&#39;
+    self.logger.entry(&#39;info&#39;, f&#39;Assuming role ARN: {role_arn}...&#39;)
+
+    try:
+        assumed_role_object = self.sts.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName=role_session_name,
+        )
+
+        assumed_credentials = assumed_role_object[&#39;Credentials&#39;]
+        self.logger.entry(&#39;debug&#39;, f&#39;Assumed credentials:\n{pformat(assumed_credentials)}&#39;)
+
+        return assumed_credentials
+
+    except ClientError as e:
+        self._aws_exception_msg(e)</code></pre>
+</details>
+</dd>
+<dt id="onnawsorgs.orgs.Orgs.get_assumed_client"><code class="name flex">
+<span>def <span class="ident">get_assumed_client</span></span>(<span>self, service_name, assumed_credentials, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Creates a client object using an assumed role</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>service_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>AWS service name</dd>
+<dt><strong><code>assumed_credentials</code></strong> :&ensp;<code>dict</code></dt>
+<dd><code>assume_role</code> dict</dd>
+<dt><strong><code>kwargs</code></strong> :&ensp;<code>dict</code></dt>
+<dd><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html">Session parameters</a></dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>assumed_credentials = orgs.assume_role('098765432109', 'demo')
+assumed_s3 = orgs.get_assumed_client('s3', assumed_credentials)
+bucket_list = assumed_s3.list_buckets()
+</code></pre>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Boto3</code> <code>client</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_assumed_client(self, service_name, assumed_credentials, **kwargs):
+    &#34;&#34;&#34;Description:
+        Creates a client object using an assumed role
+
+    Args:
+        service_name (str): AWS service name
+        assumed_credentials (dict): `assume_role` dict
+        kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+    Example:
+        Example usage:
+
+            assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+            assumed_s3 = orgs.get_assumed_client(&#39;s3&#39;, assumed_credentials)
+            bucket_list = assumed_s3.list_buckets()
+
+    Returns:
+        Boto3 client
+    &#34;&#34;&#34;
+
+    self.logger.entry(&#39;info&#39;, f&#39;Creating &#34;{service_name}&#34; client object...&#39;)
+
+    assumed_client = boto3.client(
+        service_name,
+        aws_access_key_id=assumed_credentials[&#39;AccessKeyId&#39;],
+        aws_secret_access_key=assumed_credentials[&#39;SecretAccessKey&#39;],
+        aws_session_token=assumed_credentials[&#39;SessionToken&#39;],
+        **kwargs,
+    )
+
+    return assumed_client</code></pre>
+</details>
+</dd>
+<dt id="onnawsorgs.orgs.Orgs.get_assumed_resource"><code class="name flex">
+<span>def <span class="ident">get_assumed_resource</span></span>(<span>self, service_name, assumed_credentials, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Creates a resource object using an assumed role</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>service_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>AWS service name</dd>
+<dt><strong><code>assumed_credentials</code></strong> :&ensp;<code>dict</code></dt>
+<dd><code>assume_role</code> dict</dd>
+<dt><strong><code>kwargs</code></strong> :&ensp;<code>dict</code></dt>
+<dd><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html">Session parameters</a></dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>assumed_credentials = orgs.assume_role('098765432109', 'demo')
+assumed_s3 = orgs.get_assumed_client('s3', assumed_credentials)
+bucket_list = assumed_s3.buckets.all()
+for bucket in bucket_list:
+    print(bucket_object)
+</code></pre>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Boto3</code> <code>resource</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_assumed_resource(self, service_name, assumed_credentials, **kwargs):
+    &#34;&#34;&#34;Description:
+        Creates a resource object using an assumed role
+
+    Args:
+        service_name (str): AWS service name
+        assumed_credentials (dict): `assume_role` dict
+        kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+    Example:
+        Example usage:
+
+            assumed_credentials = orgs.assume_role(&#39;098765432109&#39;, &#39;demo&#39;)
+            assumed_s3 = orgs.get_assumed_client(&#39;s3&#39;, assumed_credentials)
+            bucket_list = assumed_s3.buckets.all()
+            for bucket in bucket_list:
+                print(bucket_object)
+
+    Returns:
+        Boto3 resource
+    &#34;&#34;&#34;
+
+    self.logger.entry(&#39;info&#39;, f&#39;Creating &#34;{service_name}&#34; resource object...&#39;)
+
+    assumed_resource = boto3.resource(
+        service_name,
+        aws_access_key_id=assumed_credentials[&#39;AccessKeyId&#39;],
+        aws_secret_access_key=assumed_credentials[&#39;SecretAccessKey&#39;],
+        aws_session_token=assumed_credentials[&#39;SessionToken&#39;],
+        **kwargs,
+    )
+
+    return assumed_resource</code></pre>
+</details>
+</dd>
+<dt id="onnawsorgs.orgs.Orgs.get_aws_accounts"><code class="name flex">
+<span>def <span class="ident">get_aws_accounts</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>List of all AWS Organization accounts</p>
+<p>Automatically paginates through all AWS accounts and returns the results as a list</p>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>account_list = orgs.get_aws_accounts()
+print(account_list)
+[{'Arn': 'arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350',
+ 'Email': 'example@example.com',
+ 'Id': '123456789012',
+ 'JoinedMethod': 'CREATED',
+ 'JoinedTimestamp': datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
+ 'Name': 'John Doe',
+ 'Status': 'ACTIVE'}]
+</code></pre>
+<h2 id="returns">Returns</h2>
+<p><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts">List of all AWS Organization accounts</a></p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_aws_accounts(self) -&gt; list:
+    &#34;&#34;&#34;Description:
+        List of all AWS Organization accounts
+
+        Automatically paginates through all AWS accounts and returns the results as a list
+
+    Example:
+        Example usage:
+
+            account_list = orgs.get_aws_accounts()
+            print(account_list)
+            [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
+             &#39;Email&#39;: &#39;example@example.com&#39;,
+             &#39;Id&#39;: &#39;123456789012&#39;,
+             &#39;JoinedMethod&#39;: &#39;CREATED&#39;,
+             &#39;JoinedTimestamp&#39;: datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
+             &#39;Name&#39;: &#39;John Doe&#39;,
+             &#39;Status&#39;: &#39;ACTIVE&#39;}]
+
+    Returns:
+        [List of all AWS Organization accounts](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts)
+    &#34;&#34;&#34;
+    next_token = dict()
+    account_info = []
+
+    self.logger.entry(&#39;info&#39;, &#39;Getting AWS Organization account numbers...&#39;)
+    while True:
+        accounts = self.org.list_accounts(**next_token)
+        found_accounts = accounts[&#39;Accounts&#39;]
+        account_info = account_info + found_accounts
+        get_token = accounts.get(&#39;NextToken&#39;)
+
+        if get_token:
+            next_token[&#39;NextToken&#39;] = get_token
+
+        else:
+            break
+
+    return account_info</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="onnawsorgs" href="index.html">onnawsorgs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="onnawsorgs.orgs.Orgs" href="#onnawsorgs.orgs.Orgs">Orgs</a></code></h4>
+<ul class="">
+<li><code><a title="onnawsorgs.orgs.Orgs.assume_role" href="#onnawsorgs.orgs.Orgs.assume_role">assume_role</a></code></li>
+<li><code><a title="onnawsorgs.orgs.Orgs.get_assumed_client" href="#onnawsorgs.orgs.Orgs.get_assumed_client">get_assumed_client</a></code></li>
+<li><code><a title="onnawsorgs.orgs.Orgs.get_assumed_resource" href="#onnawsorgs.orgs.Orgs.get_assumed_resource">get_assumed_resource</a></code></li>
+<li><code><a title="onnawsorgs.orgs.Orgs.get_aws_accounts" href="#onnawsorgs.orgs.Orgs.get_aws_accounts">get_aws_accounts</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.5</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

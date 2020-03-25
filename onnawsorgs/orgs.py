@@ -33,7 +33,8 @@ class Orgs:
         Example:
             Example usage:
 
-                orgs.get_aws_accounts()
+                account_list = orgs.get_aws_accounts()
+                print(account_list)
                 [{'Arn': 'arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350',
                  'Email': 'example@example.com',
                  'Id': '123456789012',
@@ -158,7 +159,7 @@ class Orgs:
                     print(bucket_object)
 
         Returns:
-            Boto3 client
+            Boto3 resource
         """
 
         self.logger.entry('info', f'Creating "{service_name}" resource object...')

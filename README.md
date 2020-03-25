@@ -1,21 +1,11 @@
 # OzNetNerd AWS Organisations
 
-Convenience Python module for AWS Organisations & STS.
+Convenience Python module for AWS Organisations & STS
 
-## Installation
+# Documentation
 
-```
-pip3 install onnawsorgs
-```
+Module documentation & examples can be found [here.](https://onnawsorgs.oznetnerd.com/)
 
-## Docs
-
-Generate docs:
-
-```
-pip3 install pdoc3
-PYTHONPATH=. pdoc --html orgs --force -o ../docs/onnawsorgs
-```
 
 # Contact
 
