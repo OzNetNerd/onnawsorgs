@@ -138,3 +138,37 @@ class Orgs:
         )
 
         return assumed_client
+
+    def get_assumed_resource(self, service_name, assumed_credentials, **kwargs):
+        """Description:
+            Creates a resource object using an assumed role
+
+        Args:
+            service_name (str): AWS service name
+            assumed_credentials (dict): `assume_role` dict
+            kwargs (dict): [Session parameters](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/session.html)
+
+        Example:
+            Example usage:
+
+                assumed_credentials = orgs.assume_role('098765432109', 'demo')
+                assumed_s3 = orgs.get_assumed_client('s3', assumed_credentials)
+                bucket_list = assumed_s3.buckets.all()
+                for bucket in bucket_list:
+                    print(bucket_object)
+
+        Returns:
+            Boto3 client
+        """
+
+        self.logger.entry('info', f'Creating "{service_name}" resource object...')
+
+        assumed_resource = boto3.resource(
+            service_name,
+            aws_access_key_id=assumed_credentials['AccessKeyId'],
+            aws_secret_access_key=assumed_credentials['SecretAccessKey'],
+            aws_session_token=assumed_credentials['SessionToken'],
+            **kwargs,
+        )
+
+        return assumed_resource
