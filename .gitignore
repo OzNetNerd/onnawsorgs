@@ -1,3 +1,5 @@
+dist/
+onnawsorgs.egg-info/
 __pycache__/
 .idea/
 venv/

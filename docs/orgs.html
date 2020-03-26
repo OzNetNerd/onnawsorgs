@@ -26,6 +26,7 @@
 </summary>
 <pre><code class="python">import boto3
 import sys
+import csv
 from botocore.exceptions import ClientError
 from pprint import pformat
 
@@ -50,7 +51,7 @@ class Orgs:
         self.org = boto3.client(&#39;organizations&#39;)
         self.sts = boto3.client(&#39;sts&#39;)
 
-    def get_aws_accounts(self) -&gt; list:
+    def get_accounts(self) -&gt; list:
         &#34;&#34;&#34;Description:
             List of all AWS Organization accounts
 
@@ -59,7 +60,7 @@ class Orgs:
         Example:
             Example usage:
 
-                account_list = orgs.get_aws_accounts()
+                account_list = orgs.get_accounts()
                 print(account_list)
                 [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
                  &#39;Email&#39;: &#39;example@example.com&#39;,
@@ -198,7 +199,36 @@ class Orgs:
             **kwargs,
         )
 
-        return assumed_resource</code></pre>
+        return assumed_resource
+
+    def accounts_to_csv(self, account_ids, output_file_path=&#39;aws_accounts.csv&#39;) -&gt; None:
+        &#34;&#34;&#34;Description:
+            Outputs AWS accounts in a CSV file
+
+        Args:
+            account_ids (list): `List` of account `dicts` (see `get_accounts`)
+            output_file_path (str): Path and filename of where to output the CSV
+
+        Example:
+            Example usage:
+
+                orgs.accounts_to_csv()
+
+                # CSV file contents
+                Id,Arn,Email,Name,Status,JoinedMethod,JoinedTimestamp
+                123456789012,arn:aws:organizations::0987654321009:account/o-753jk6teq2/123456789012,john@example.com,John Doe,ACTIVE,CREATED,2020-01-13 13:58:39.542000+11:00
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, &#39;Exporting accounts to CSV file...&#39;)
+        headers = account_ids[0].keys()
+
+        with open(output_file_path, &#39;w&#39;) as f:
+            dict_writer = csv.DictWriter(f, headers)
+            dict_writer.writeheader()
+            dict_writer.writerows(account_ids)</code></pre>
 </details>
 </section>
 <section>
@@ -253,7 +283,7 @@ orgs = Orgs(logger)
         self.org = boto3.client(&#39;organizations&#39;)
         self.sts = boto3.client(&#39;sts&#39;)
 
-    def get_aws_accounts(self) -&gt; list:
+    def get_accounts(self) -&gt; list:
         &#34;&#34;&#34;Description:
             List of all AWS Organization accounts
 
@@ -262,7 +292,7 @@ orgs = Orgs(logger)
         Example:
             Example usage:
 
-                account_list = orgs.get_aws_accounts()
+                account_list = orgs.get_accounts()
                 print(account_list)
                 [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
                  &#39;Email&#39;: &#39;example@example.com&#39;,
@@ -401,10 +431,99 @@ orgs = Orgs(logger)
             **kwargs,
         )
 
-        return assumed_resource</code></pre>
+        return assumed_resource
+
+    def accounts_to_csv(self, account_ids, output_file_path=&#39;aws_accounts.csv&#39;) -&gt; None:
+        &#34;&#34;&#34;Description:
+            Outputs AWS accounts in a CSV file
+
+        Args:
+            account_ids (list): `List` of account `dicts` (see `get_accounts`)
+            output_file_path (str): Path and filename of where to output the CSV
+
+        Example:
+            Example usage:
+
+                orgs.accounts_to_csv()
+
+                # CSV file contents
+                Id,Arn,Email,Name,Status,JoinedMethod,JoinedTimestamp
+                123456789012,arn:aws:organizations::0987654321009:account/o-753jk6teq2/123456789012,john@example.com,John Doe,ACTIVE,CREATED,2020-01-13 13:58:39.542000+11:00
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, &#39;Exporting accounts to CSV file...&#39;)
+        headers = account_ids[0].keys()
+
+        with open(output_file_path, &#39;w&#39;) as f:
+            dict_writer = csv.DictWriter(f, headers)
+            dict_writer.writeheader()
+            dict_writer.writerows(account_ids)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
+<dt id="onnawsorgs.orgs.Orgs.accounts_to_csv"><code class="name flex">
+<span>def <span class="ident">accounts_to_csv</span></span>(<span>self, account_ids, output_file_path='aws_accounts.csv')</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Outputs AWS accounts in a CSV file</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>account_ids</code></strong> :&ensp;<code>list</code></dt>
+<dd><code>List</code> of account <code>dicts</code> (see <code>get_accounts</code>)</dd>
+<dt><strong><code>output_file_path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path and filename of where to output the CSV</dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>orgs.accounts_to_csv()
+
+# CSV file contents
+Id,Arn,Email,Name,Status,JoinedMethod,JoinedTimestamp
+123456789012,arn:aws:organizations::0987654321009:account/o-753jk6teq2/123456789012,john@example.com,John Doe,ACTIVE,CREATED,2020-01-13 13:58:39.542000+11:00
+</code></pre>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>None</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def accounts_to_csv(self, account_ids, output_file_path=&#39;aws_accounts.csv&#39;) -&gt; None:
+    &#34;&#34;&#34;Description:
+        Outputs AWS accounts in a CSV file
+
+    Args:
+        account_ids (list): `List` of account `dicts` (see `get_accounts`)
+        output_file_path (str): Path and filename of where to output the CSV
+
+    Example:
+        Example usage:
+
+            orgs.accounts_to_csv()
+
+            # CSV file contents
+            Id,Arn,Email,Name,Status,JoinedMethod,JoinedTimestamp
+            123456789012,arn:aws:organizations::0987654321009:account/o-753jk6teq2/123456789012,john@example.com,John Doe,ACTIVE,CREATED,2020-01-13 13:58:39.542000+11:00
+
+    Returns:
+        None
+    &#34;&#34;&#34;
+
+    self.logger.entry(&#39;info&#39;, &#39;Exporting accounts to CSV file...&#39;)
+    headers = account_ids[0].keys()
+
+    with open(output_file_path, &#39;w&#39;) as f:
+        dict_writer = csv.DictWriter(f, headers)
+        dict_writer.writeheader()
+        dict_writer.writerows(account_ids)</code></pre>
+</details>
+</dd>
 <dt id="onnawsorgs.orgs.Orgs.assume_role"><code class="name flex">
 <span>def <span class="ident">assume_role</span></span>(<span>self, account_id, role_session_name, account_role='OrganizationAccountAccessRole')</span>
 </code></dt>
@@ -472,6 +591,72 @@ orgs = Orgs(logger)
 
     except ClientError as e:
         self._aws_exception_msg(e)</code></pre>
+</details>
+</dd>
+<dt id="onnawsorgs.orgs.Orgs.get_accounts"><code class="name flex">
+<span>def <span class="ident">get_accounts</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>List of all AWS Organization accounts</p>
+<p>Automatically paginates through all AWS accounts and returns the results as a list</p>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>account_list = orgs.get_accounts()
+print(account_list)
+[{'Arn': 'arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350',
+ 'Email': 'example@example.com',
+ 'Id': '123456789012',
+ 'JoinedMethod': 'CREATED',
+ 'JoinedTimestamp': datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
+ 'Name': 'John Doe',
+ 'Status': 'ACTIVE'}]
+</code></pre>
+<h2 id="returns">Returns</h2>
+<p><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts">List of all AWS Organization accounts</a></p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_accounts(self) -&gt; list:
+    &#34;&#34;&#34;Description:
+        List of all AWS Organization accounts
+
+        Automatically paginates through all AWS accounts and returns the results as a list
+
+    Example:
+        Example usage:
+
+            account_list = orgs.get_accounts()
+            print(account_list)
+            [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
+             &#39;Email&#39;: &#39;example@example.com&#39;,
+             &#39;Id&#39;: &#39;123456789012&#39;,
+             &#39;JoinedMethod&#39;: &#39;CREATED&#39;,
+             &#39;JoinedTimestamp&#39;: datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
+             &#39;Name&#39;: &#39;John Doe&#39;,
+             &#39;Status&#39;: &#39;ACTIVE&#39;}]
+
+    Returns:
+        [List of all AWS Organization accounts](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts)
+    &#34;&#34;&#34;
+    next_token = dict()
+    account_info = []
+
+    self.logger.entry(&#39;info&#39;, &#39;Getting AWS Organization account numbers...&#39;)
+    while True:
+        accounts = self.org.list_accounts(**next_token)
+        found_accounts = accounts[&#39;Accounts&#39;]
+        account_info = account_info + found_accounts
+        get_token = accounts.get(&#39;NextToken&#39;)
+
+        if get_token:
+            next_token[&#39;NextToken&#39;] = get_token
+
+        else:
+            break
+
+    return account_info</code></pre>
 </details>
 </dd>
 <dt id="onnawsorgs.orgs.Orgs.get_assumed_client"><code class="name flex">
@@ -604,72 +789,6 @@ for bucket in bucket_list:
     return assumed_resource</code></pre>
 </details>
 </dd>
-<dt id="onnawsorgs.orgs.Orgs.get_aws_accounts"><code class="name flex">
-<span>def <span class="ident">get_aws_accounts</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"><h2 id="description">Description</h2>
-<p>List of all AWS Organization accounts</p>
-<p>Automatically paginates through all AWS accounts and returns the results as a list</p>
-<h2 id="example">Example</h2>
-<p>Example usage:</p>
-<pre><code>account_list = orgs.get_aws_accounts()
-print(account_list)
-[{'Arn': 'arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350',
- 'Email': 'example@example.com',
- 'Id': '123456789012',
- 'JoinedMethod': 'CREATED',
- 'JoinedTimestamp': datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
- 'Name': 'John Doe',
- 'Status': 'ACTIVE'}]
-</code></pre>
-<h2 id="returns">Returns</h2>
-<p><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts">List of all AWS Organization accounts</a></p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_aws_accounts(self) -&gt; list:
-    &#34;&#34;&#34;Description:
-        List of all AWS Organization accounts
-
-        Automatically paginates through all AWS accounts and returns the results as a list
-
-    Example:
-        Example usage:
-
-            account_list = orgs.get_aws_accounts()
-            print(account_list)
-            [{&#39;Arn&#39;: &#39;arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350&#39;,
-             &#39;Email&#39;: &#39;example@example.com&#39;,
-             &#39;Id&#39;: &#39;123456789012&#39;,
-             &#39;JoinedMethod&#39;: &#39;CREATED&#39;,
-             &#39;JoinedTimestamp&#39;: datetime.datetime(2020, 1, 13, 13, 59, 46, 540000, tzinfo=tzlocal()),
-             &#39;Name&#39;: &#39;John Doe&#39;,
-             &#39;Status&#39;: &#39;ACTIVE&#39;}]
-
-    Returns:
-        [List of all AWS Organization accounts](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/organizations.html#Organizations.Client.list_accounts)
-    &#34;&#34;&#34;
-    next_token = dict()
-    account_info = []
-
-    self.logger.entry(&#39;info&#39;, &#39;Getting AWS Organization account numbers...&#39;)
-    while True:
-        accounts = self.org.list_accounts(**next_token)
-        found_accounts = accounts[&#39;Accounts&#39;]
-        account_info = account_info + found_accounts
-        get_token = accounts.get(&#39;NextToken&#39;)
-
-        if get_token:
-            next_token[&#39;NextToken&#39;] = get_token
-
-        else:
-            break
-
-    return account_info</code></pre>
-</details>
-</dd>
 </dl>
 </dd>
 </dl>
@@ -691,10 +810,11 @@ print(account_list)
 <li>
 <h4><code><a title="onnawsorgs.orgs.Orgs" href="#onnawsorgs.orgs.Orgs">Orgs</a></code></h4>
 <ul class="">
+<li><code><a title="onnawsorgs.orgs.Orgs.accounts_to_csv" href="#onnawsorgs.orgs.Orgs.accounts_to_csv">accounts_to_csv</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.assume_role" href="#onnawsorgs.orgs.Orgs.assume_role">assume_role</a></code></li>
+<li><code><a title="onnawsorgs.orgs.Orgs.get_accounts" href="#onnawsorgs.orgs.Orgs.get_accounts">get_accounts</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.get_assumed_client" href="#onnawsorgs.orgs.Orgs.get_assumed_client">get_assumed_client</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.get_assumed_resource" href="#onnawsorgs.orgs.Orgs.get_assumed_resource">get_assumed_resource</a></code></li>
-<li><code><a title="onnawsorgs.orgs.Orgs.get_aws_accounts" href="#onnawsorgs.orgs.Orgs.get_aws_accounts">get_aws_accounts</a></code></li>
 </ul>
 </li>
 </ul>

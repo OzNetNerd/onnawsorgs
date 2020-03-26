@@ -1,5 +1,6 @@
 import boto3
 import sys
+import csv
 from botocore.exceptions import ClientError
 from pprint import pformat
 
@@ -24,7 +25,7 @@ class Orgs:
         self.org = boto3.client('organizations')
         self.sts = boto3.client('sts')
 
-    def get_aws_accounts(self) -> list:
+    def get_accounts(self) -> list:
         """Description:
             List of all AWS Organization accounts
 
@@ -33,7 +34,7 @@ class Orgs:
         Example:
             Example usage:
 
-                account_list = orgs.get_aws_accounts()
+                account_list = orgs.get_accounts()
                 print(account_list)
                 [{'Arn': 'arn:aws:organizations::098765432109:account/o-345jk6d2fa/6834032126350',
                  'Email': 'example@example.com',
@@ -173,3 +174,32 @@ class Orgs:
         )
 
         return assumed_resource
+
+    def accounts_to_csv(self, account_ids, output_file_path='aws_accounts.csv') -> None:
+        """Description:
+            Outputs AWS accounts in a CSV file
+
+        Args:
+            account_ids (list): `List` of account `dicts` (see `get_accounts`)
+            output_file_path (str): Path and filename of where to output the CSV
+
+        Example:
+            Example usage:
+
+                orgs.accounts_to_csv()
+
+                # CSV file contents
+                Id,Arn,Email,Name,Status,JoinedMethod,JoinedTimestamp
+                123456789012,arn:aws:organizations::0987654321009:account/o-753jk6teq2/123456789012,john@example.com,John Doe,ACTIVE,CREATED,2020-01-13 13:58:39.542000+11:00
+
+        Returns:
+            None
+        """
+
+        self.logger.entry('info', 'Exporting accounts to CSV file...')
+        headers = account_ids[0].keys()
+
+        with open(output_file_path, 'w') as f:
+            dict_writer = csv.DictWriter(f, headers)
+            dict_writer.writeheader()
+            dict_writer.writerows(account_ids)
