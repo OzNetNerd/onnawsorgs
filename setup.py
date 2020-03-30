@@ -9,9 +9,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=find_packages(),
-    url='https://oznetnerd.com',
+    url='https://onnawsorgs.oznetnerd.com',
     install_requires=[
-        'onnlogger==0.0.5'
+        'boto3'
     ],
     license='',
     author='Will Robinson',
