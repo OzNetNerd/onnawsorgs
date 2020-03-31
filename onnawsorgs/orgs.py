@@ -24,6 +24,7 @@ class Orgs:
         self.logger = logger
         self.org = boto3.client('organizations')
         self.sts = boto3.client('sts')
+        self.root_account_id = boto3.client('sts').get_caller_identity().get('Account')
 
     def get_accounts(self) -> list:
         """Description:
