@@ -3,7 +3,8 @@ import sys
 import csv
 from botocore.exceptions import ClientError
 from pprint import pformat
-
+from onnmisc import csv_to_list
+from time import sleep
 
 class Orgs:
     def __init__(self, logger):
@@ -204,3 +205,171 @@ class Orgs:
             dict_writer = csv.DictWriter(f, headers)
             dict_writer.writeheader()
             dict_writer.writerows(account_ids)
+
+    def create_accounts(self, input_file_path, sleep_time=5) -> list:
+        """Description:
+            Creates AWS accounts using information contained in a CSV file
+
+            `RoleName` defaults to `OrganizationAccountAccessRole`m and `IamUserAccessToBilling` defaults to `DENY`
+
+        Args:
+            input_file_path (str): Path to CSV file
+            sleep_time (int):
+
+        Example:
+            Example CSV file:
+
+                Email,AccountName,RoleName,IamUserAccessToBilling
+                demo@example.com,demo,,
+                demo2@example.com,demo2,,
+
+            Example usage:
+
+                from pprint import pprint
+                create_statuses = orgs.create_accounts('new_accounts.csv')
+                pprint(create_statuses)
+                [{'CreateAccountStatus': {'AccountName': 'demo',
+                                          'CompletedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 40, 484000, tzinfo=tzlocal()),
+                                          'FailureReason': 'EMAIL_ALREADY_EXISTS',
+                                          'Id': 'fse-jmh342kjdsf9231jhsakdi127rh210la',
+                                          'RequestedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 40, 112000, tzinfo=tzlocal()),
+                                          'State': 'FAILED'},
+                  'ResponseMetadata': {'HTTPHeaders': {'content-length': '222',
+                                                       'content-type': 'application/x-amz-json-1.1',
+                                                       'date': 'Tue, 14 Apr 2020 00:49:51 GMT',
+                                                       'x-amzn-requestid': 'sadjk3-kjdhasjkdh231-asjdhaskdh1'},
+                                       'HTTPStatusCode': 200,
+                                       'RequestId': 'sadjk3-kjdhasjkdh231-asjdhaskdh1',
+                                       'RetryAttempts': 0}},
+                 {'CreateAccountStatus': {'AccountId': '123456789012',
+                                          'AccountName': 'demo2',
+                                          'CompletedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 50, 59000, tzinfo=tzlocal()),
+                                          'Id': 's42-kj342ufsdjfhsa87sdfj234821jhi3fd',
+                                          'RequestedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 45, 901000, tzinfo=tzlocal()),
+                                          'State': 'SUCCEEDED'},
+                  'ResponseMetadata': {'HTTPHeaders': {'content-length': '213',
+                                                       'content-type': 'application/x-amz-json-1.1',
+                                                       'date': 'Tue, 14 Apr 2020 00:49:51 GMT',
+                                                       'x-amzn-requestid': '3245df-dsfe54-435gd-324fds-fswdr4352'},
+                                       'HTTPStatusCode': 200,
+                                       'RequestId': '3245df-dsfe54-435gd-324fds-fswdr4352',
+                                       'RetryAttempts': 0}}]
+
+        Returns:
+            list
+        """
+        status_ids = []
+
+        self.logger.entry('info', f'Creating new accounts as per {input_file_path}...')
+        new_accounts = csv_to_list(input_file_path)
+
+        for account in new_accounts:
+            email = account['Email']
+            account_name = account['AccountName']
+            role_name = account.get('RoleName') if account.get('RoleName') else 'OrganizationAccountAccessRole'
+            access_billing = account.get('IamUserAccessToBilling') if account.get('IamUserAccessToBilling') else 'DENY'
+
+            self.logger.entry('debug', f'Creating role - Account name: {account_name}, Email: {email}, '
+                                       f'Role: {role_name}, Access to billing: {access_billing}')
+
+            create_status = self.org.create_account(
+                Email=email,
+                AccountName=account_name,
+                RoleName=role_name,
+                IamUserAccessToBilling=access_billing
+            )
+
+            if len(new_accounts) > 1:
+                self.logger.entry('debug', f'Sleeping {sleep_time} seconds to avoid account creation conflicts...')
+                sleep(sleep_time)
+
+            status_id = create_status['CreateAccountStatus']['Id']
+            status_ids.append(status_id)
+
+        create_statuses = self._get_account_statuses(status_ids)
+
+        self.logger.entry('debug', f'Finished creating accounts:\n{pformat(create_statuses)}')
+
+        return create_statuses
+
+    def _get_account_statuses(self, status_ids, sleep_time=10) -> list:
+        """Description:
+            Ensures that the account creation process finishes
+
+            See `create_accounts` for more information
+
+        Args:
+            status_ids: Output from `create_accounts`
+            sleep_time (int): Seconds to sleep between checks
+
+        Returns:
+            list
+        """
+        results = []
+
+        self.logger.entry('info', 'Checking the status of the account creations...')
+
+        for status_id in status_ids:
+            while True:
+                get_status = self.org.describe_create_account_status(CreateAccountRequestId=status_id)
+                creation_state = get_status['CreateAccountStatus']['State']
+                account_name = get_status['CreateAccountStatus']['AccountName']
+
+                if creation_state == 'IN_PROGRESS':
+                    self.logger.entry('debug', f'Creation state for account name "{account_name}" is "IN_PROGRESS". '
+                                               f'Sleeping for {sleep_time} seconds then will try again...')
+                    sleep(sleep_time)
+                    continue
+
+                elif creation_state == 'SUCCEEDED':
+                    self.logger.entry('debug', f'Successfully created account name "{account_name}"')
+                    results.append(get_status)
+                    break
+
+                elif creation_state == 'FAILED':
+                    failure_reason = get_status['CreateAccountStatus']['FailureReason']
+                    self.logger.entry('warning', f'Failed to create account name "{account_name}": {failure_reason}')
+                    results.append(get_status)
+                    break
+
+        return results
+
+    def extract_account_statuses(self, create_statuses) -> dict:
+        """Description:
+            Simplified account creation information
+
+        Args:
+            create_statuses: Output from `create_accounts`
+
+        Example:
+            Example usage:
+
+                from pprint import pprint
+                create_statuses = orgs.create_accounts('new_accounts.csv')
+                statuses = orgs.extract_account_statuses(create_statuses)
+                pprint(statuses)
+                {'Failed': {'demo': 'EMAIL_ALREADY_EXISTS'}, 'Succeeded': ['demo2']}
+
+        Returns:
+            dict
+        """
+        self.logger.entry('info', f'Extracting account creation statuses...')
+
+        statuses = {
+            'Succeeded': [],
+            'Failed': {},
+        }
+
+        for entry in create_statuses:
+            account_name = entry['CreateAccountStatus']['AccountName']
+            state = entry['CreateAccountStatus']['State']
+
+            if state == 'SUCCEEDED':
+                statuses['Succeeded'].append(account_name)
+
+            elif state == 'FAILED':
+                failure_reason = entry['CreateAccountStatus']['FailureReason']
+                statuses['Failed'][account_name] = failure_reason
+
+        return statuses
+

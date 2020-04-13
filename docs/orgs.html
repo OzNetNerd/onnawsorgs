@@ -29,7 +29,8 @@ import sys
 import csv
 from botocore.exceptions import ClientError
 from pprint import pformat
-
+from onnmisc import csv_to_list
+from time import sleep
 
 class Orgs:
     def __init__(self, logger):
@@ -50,6 +51,7 @@ class Orgs:
         self.logger = logger
         self.org = boto3.client(&#39;organizations&#39;)
         self.sts = boto3.client(&#39;sts&#39;)
+        self.root_account_id = boto3.client(&#39;sts&#39;).get_caller_identity().get(&#39;Account&#39;)
 
     def get_accounts(self) -&gt; list:
         &#34;&#34;&#34;Description:
@@ -228,7 +230,175 @@ class Orgs:
         with open(output_file_path, &#39;w&#39;) as f:
             dict_writer = csv.DictWriter(f, headers)
             dict_writer.writeheader()
-            dict_writer.writerows(account_ids)</code></pre>
+            dict_writer.writerows(account_ids)
+
+    def create_accounts(self, input_file_path, sleep_time=5) -&gt; list:
+        &#34;&#34;&#34;Description:
+            Creates AWS accounts using information contained in a CSV file
+
+            `RoleName` defaults to `OrganizationAccountAccessRole`m and `IamUserAccessToBilling` defaults to `DENY`
+
+        Args:
+            input_file_path (str): Path to CSV file
+            sleep_time (int):
+
+        Example:
+            Example CSV file:
+
+                Email,AccountName,RoleName,IamUserAccessToBilling
+                demo@example.com,demo,,
+                demo2@example.com,demo2,,
+
+            Example usage:
+
+                from pprint import pprint
+                create_statuses = orgs.create_accounts(&#39;new_accounts.csv&#39;)
+                pprint(create_statuses)
+                [{&#39;CreateAccountStatus&#39;: {&#39;AccountName&#39;: &#39;demo&#39;,
+                                          &#39;CompletedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 40, 484000, tzinfo=tzlocal()),
+                                          &#39;FailureReason&#39;: &#39;EMAIL_ALREADY_EXISTS&#39;,
+                                          &#39;Id&#39;: &#39;fse-jmh342kjdsf9231jhsakdi127rh210la&#39;,
+                                          &#39;RequestedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 40, 112000, tzinfo=tzlocal()),
+                                          &#39;State&#39;: &#39;FAILED&#39;},
+                  &#39;ResponseMetadata&#39;: {&#39;HTTPHeaders&#39;: {&#39;content-length&#39;: &#39;222&#39;,
+                                                       &#39;content-type&#39;: &#39;application/x-amz-json-1.1&#39;,
+                                                       &#39;date&#39;: &#39;Tue, 14 Apr 2020 00:49:51 GMT&#39;,
+                                                       &#39;x-amzn-requestid&#39;: &#39;sadjk3-kjdhasjkdh231-asjdhaskdh1&#39;},
+                                       &#39;HTTPStatusCode&#39;: 200,
+                                       &#39;RequestId&#39;: &#39;sadjk3-kjdhasjkdh231-asjdhaskdh1&#39;,
+                                       &#39;RetryAttempts&#39;: 0}},
+                 {&#39;CreateAccountStatus&#39;: {&#39;AccountId&#39;: &#39;123456789012&#39;,
+                                          &#39;AccountName&#39;: &#39;demo2&#39;,
+                                          &#39;CompletedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 50, 59000, tzinfo=tzlocal()),
+                                          &#39;Id&#39;: &#39;s42-kj342ufsdjfhsa87sdfj234821jhi3fd&#39;,
+                                          &#39;RequestedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 45, 901000, tzinfo=tzlocal()),
+                                          &#39;State&#39;: &#39;SUCCEEDED&#39;},
+                  &#39;ResponseMetadata&#39;: {&#39;HTTPHeaders&#39;: {&#39;content-length&#39;: &#39;213&#39;,
+                                                       &#39;content-type&#39;: &#39;application/x-amz-json-1.1&#39;,
+                                                       &#39;date&#39;: &#39;Tue, 14 Apr 2020 00:49:51 GMT&#39;,
+                                                       &#39;x-amzn-requestid&#39;: &#39;3245df-dsfe54-435gd-324fds-fswdr4352&#39;},
+                                       &#39;HTTPStatusCode&#39;: 200,
+                                       &#39;RequestId&#39;: &#39;3245df-dsfe54-435gd-324fds-fswdr4352&#39;,
+                                       &#39;RetryAttempts&#39;: 0}}]
+
+        Returns:
+            list
+        &#34;&#34;&#34;
+        status_ids = []
+
+        self.logger.entry(&#39;info&#39;, f&#39;Creating new accounts as per {input_file_path}...&#39;)
+        new_accounts = csv_to_list(input_file_path)
+
+        for account in new_accounts:
+            email = account[&#39;Email&#39;]
+            account_name = account[&#39;AccountName&#39;]
+            role_name = account.get(&#39;RoleName&#39;) if account.get(&#39;RoleName&#39;) else &#39;OrganizationAccountAccessRole&#39;
+            access_billing = account.get(&#39;IamUserAccessToBilling&#39;) if account.get(&#39;IamUserAccessToBilling&#39;) else &#39;DENY&#39;
+
+            self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
+                                       f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
+
+            create_status = self.org.create_account(
+                Email=email,
+                AccountName=account_name,
+                RoleName=role_name,
+                IamUserAccessToBilling=access_billing
+            )
+
+            if len(new_accounts) &gt; 1:
+                self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation conflicts...&#39;)
+                sleep(sleep_time)
+
+            status_id = create_status[&#39;CreateAccountStatus&#39;][&#39;Id&#39;]
+            status_ids.append(status_id)
+
+        create_statuses = self._get_account_statuses(status_ids)
+
+        self.logger.entry(&#39;debug&#39;, f&#39;Finished creating accounts:\n{pformat(create_statuses)}&#39;)
+
+        return create_statuses
+
+    def _get_account_statuses(self, status_ids, sleep_time=10) -&gt; list:
+        &#34;&#34;&#34;Description:
+            Ensures that the account creation process finishes
+
+            See `create_accounts` for more information
+
+        Args:
+            status_ids: Output from `create_accounts`
+            sleep_time (int): Seconds to sleep between checks
+
+        Returns:
+            list
+        &#34;&#34;&#34;
+        results = []
+
+        self.logger.entry(&#39;info&#39;, &#39;Checking the status of the account creations...&#39;)
+
+        for status_id in status_ids:
+            while True:
+                get_status = self.org.describe_create_account_status(CreateAccountRequestId=status_id)
+                creation_state = get_status[&#39;CreateAccountStatus&#39;][&#39;State&#39;]
+                account_name = get_status[&#39;CreateAccountStatus&#39;][&#39;AccountName&#39;]
+
+                if creation_state == &#39;IN_PROGRESS&#39;:
+                    self.logger.entry(&#39;debug&#39;, f&#39;Creation state for account name &#34;{account_name}&#34; is &#34;IN_PROGRESS&#34;. &#39;
+                                               f&#39;Sleeping for {sleep_time} seconds then will try again...&#39;)
+                    sleep(sleep_time)
+                    continue
+
+                elif creation_state == &#39;SUCCEEDED&#39;:
+                    self.logger.entry(&#39;debug&#39;, f&#39;Successfully created account name &#34;{account_name}&#34;&#39;)
+                    results.append(get_status)
+                    break
+
+                elif creation_state == &#39;FAILED&#39;:
+                    failure_reason = get_status[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
+                    self.logger.entry(&#39;warning&#39;, f&#39;Failed to create account name &#34;{account_name}&#34;: {failure_reason}&#39;)
+                    results.append(get_status)
+                    break
+
+        return results
+
+    def extract_account_statuses(self, create_statuses) -&gt; dict:
+        &#34;&#34;&#34;Description:
+            Simplified account creation information
+
+        Args:
+            create_statuses: Output from `create_accounts`
+
+        Example:
+            Example usage:
+
+                from pprint import pprint
+                create_statuses = orgs.create_accounts(&#39;new_accounts.csv&#39;)
+                statuses = orgs.extract_account_statuses(create_statuses)
+                pprint(statuses)
+                {&#39;Failed&#39;: {&#39;demo&#39;: &#39;EMAIL_ALREADY_EXISTS&#39;}, &#39;Succeeded&#39;: [&#39;demo2&#39;]}
+
+        Returns:
+            dict
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, f&#39;Extracting account creation statuses...&#39;)
+
+        statuses = {
+            &#39;Succeeded&#39;: [],
+            &#39;Failed&#39;: {},
+        }
+
+        for entry in create_statuses:
+            account_name = entry[&#39;CreateAccountStatus&#39;][&#39;AccountName&#39;]
+            state = entry[&#39;CreateAccountStatus&#39;][&#39;State&#39;]
+
+            if state == &#39;SUCCEEDED&#39;:
+                statuses[&#39;Succeeded&#39;].append(account_name)
+
+            elif state == &#39;FAILED&#39;:
+                failure_reason = entry[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
+                statuses[&#39;Failed&#39;][account_name] = failure_reason
+
+        return statuses</code></pre>
 </details>
 </section>
 <section>
@@ -282,6 +452,7 @@ orgs = Orgs(logger)
         self.logger = logger
         self.org = boto3.client(&#39;organizations&#39;)
         self.sts = boto3.client(&#39;sts&#39;)
+        self.root_account_id = boto3.client(&#39;sts&#39;).get_caller_identity().get(&#39;Account&#39;)
 
     def get_accounts(self) -&gt; list:
         &#34;&#34;&#34;Description:
@@ -460,7 +631,175 @@ orgs = Orgs(logger)
         with open(output_file_path, &#39;w&#39;) as f:
             dict_writer = csv.DictWriter(f, headers)
             dict_writer.writeheader()
-            dict_writer.writerows(account_ids)</code></pre>
+            dict_writer.writerows(account_ids)
+
+    def create_accounts(self, input_file_path, sleep_time=5) -&gt; list:
+        &#34;&#34;&#34;Description:
+            Creates AWS accounts using information contained in a CSV file
+
+            `RoleName` defaults to `OrganizationAccountAccessRole`m and `IamUserAccessToBilling` defaults to `DENY`
+
+        Args:
+            input_file_path (str): Path to CSV file
+            sleep_time (int):
+
+        Example:
+            Example CSV file:
+
+                Email,AccountName,RoleName,IamUserAccessToBilling
+                demo@example.com,demo,,
+                demo2@example.com,demo2,,
+
+            Example usage:
+
+                from pprint import pprint
+                create_statuses = orgs.create_accounts(&#39;new_accounts.csv&#39;)
+                pprint(create_statuses)
+                [{&#39;CreateAccountStatus&#39;: {&#39;AccountName&#39;: &#39;demo&#39;,
+                                          &#39;CompletedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 40, 484000, tzinfo=tzlocal()),
+                                          &#39;FailureReason&#39;: &#39;EMAIL_ALREADY_EXISTS&#39;,
+                                          &#39;Id&#39;: &#39;fse-jmh342kjdsf9231jhsakdi127rh210la&#39;,
+                                          &#39;RequestedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 40, 112000, tzinfo=tzlocal()),
+                                          &#39;State&#39;: &#39;FAILED&#39;},
+                  &#39;ResponseMetadata&#39;: {&#39;HTTPHeaders&#39;: {&#39;content-length&#39;: &#39;222&#39;,
+                                                       &#39;content-type&#39;: &#39;application/x-amz-json-1.1&#39;,
+                                                       &#39;date&#39;: &#39;Tue, 14 Apr 2020 00:49:51 GMT&#39;,
+                                                       &#39;x-amzn-requestid&#39;: &#39;sadjk3-kjdhasjkdh231-asjdhaskdh1&#39;},
+                                       &#39;HTTPStatusCode&#39;: 200,
+                                       &#39;RequestId&#39;: &#39;sadjk3-kjdhasjkdh231-asjdhaskdh1&#39;,
+                                       &#39;RetryAttempts&#39;: 0}},
+                 {&#39;CreateAccountStatus&#39;: {&#39;AccountId&#39;: &#39;123456789012&#39;,
+                                          &#39;AccountName&#39;: &#39;demo2&#39;,
+                                          &#39;CompletedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 50, 59000, tzinfo=tzlocal()),
+                                          &#39;Id&#39;: &#39;s42-kj342ufsdjfhsa87sdfj234821jhi3fd&#39;,
+                                          &#39;RequestedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 45, 901000, tzinfo=tzlocal()),
+                                          &#39;State&#39;: &#39;SUCCEEDED&#39;},
+                  &#39;ResponseMetadata&#39;: {&#39;HTTPHeaders&#39;: {&#39;content-length&#39;: &#39;213&#39;,
+                                                       &#39;content-type&#39;: &#39;application/x-amz-json-1.1&#39;,
+                                                       &#39;date&#39;: &#39;Tue, 14 Apr 2020 00:49:51 GMT&#39;,
+                                                       &#39;x-amzn-requestid&#39;: &#39;3245df-dsfe54-435gd-324fds-fswdr4352&#39;},
+                                       &#39;HTTPStatusCode&#39;: 200,
+                                       &#39;RequestId&#39;: &#39;3245df-dsfe54-435gd-324fds-fswdr4352&#39;,
+                                       &#39;RetryAttempts&#39;: 0}}]
+
+        Returns:
+            list
+        &#34;&#34;&#34;
+        status_ids = []
+
+        self.logger.entry(&#39;info&#39;, f&#39;Creating new accounts as per {input_file_path}...&#39;)
+        new_accounts = csv_to_list(input_file_path)
+
+        for account in new_accounts:
+            email = account[&#39;Email&#39;]
+            account_name = account[&#39;AccountName&#39;]
+            role_name = account.get(&#39;RoleName&#39;) if account.get(&#39;RoleName&#39;) else &#39;OrganizationAccountAccessRole&#39;
+            access_billing = account.get(&#39;IamUserAccessToBilling&#39;) if account.get(&#39;IamUserAccessToBilling&#39;) else &#39;DENY&#39;
+
+            self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
+                                       f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
+
+            create_status = self.org.create_account(
+                Email=email,
+                AccountName=account_name,
+                RoleName=role_name,
+                IamUserAccessToBilling=access_billing
+            )
+
+            if len(new_accounts) &gt; 1:
+                self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation conflicts...&#39;)
+                sleep(sleep_time)
+
+            status_id = create_status[&#39;CreateAccountStatus&#39;][&#39;Id&#39;]
+            status_ids.append(status_id)
+
+        create_statuses = self._get_account_statuses(status_ids)
+
+        self.logger.entry(&#39;debug&#39;, f&#39;Finished creating accounts:\n{pformat(create_statuses)}&#39;)
+
+        return create_statuses
+
+    def _get_account_statuses(self, status_ids, sleep_time=10) -&gt; list:
+        &#34;&#34;&#34;Description:
+            Ensures that the account creation process finishes
+
+            See `create_accounts` for more information
+
+        Args:
+            status_ids: Output from `create_accounts`
+            sleep_time (int): Seconds to sleep between checks
+
+        Returns:
+            list
+        &#34;&#34;&#34;
+        results = []
+
+        self.logger.entry(&#39;info&#39;, &#39;Checking the status of the account creations...&#39;)
+
+        for status_id in status_ids:
+            while True:
+                get_status = self.org.describe_create_account_status(CreateAccountRequestId=status_id)
+                creation_state = get_status[&#39;CreateAccountStatus&#39;][&#39;State&#39;]
+                account_name = get_status[&#39;CreateAccountStatus&#39;][&#39;AccountName&#39;]
+
+                if creation_state == &#39;IN_PROGRESS&#39;:
+                    self.logger.entry(&#39;debug&#39;, f&#39;Creation state for account name &#34;{account_name}&#34; is &#34;IN_PROGRESS&#34;. &#39;
+                                               f&#39;Sleeping for {sleep_time} seconds then will try again...&#39;)
+                    sleep(sleep_time)
+                    continue
+
+                elif creation_state == &#39;SUCCEEDED&#39;:
+                    self.logger.entry(&#39;debug&#39;, f&#39;Successfully created account name &#34;{account_name}&#34;&#39;)
+                    results.append(get_status)
+                    break
+
+                elif creation_state == &#39;FAILED&#39;:
+                    failure_reason = get_status[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
+                    self.logger.entry(&#39;warning&#39;, f&#39;Failed to create account name &#34;{account_name}&#34;: {failure_reason}&#39;)
+                    results.append(get_status)
+                    break
+
+        return results
+
+    def extract_account_statuses(self, create_statuses) -&gt; dict:
+        &#34;&#34;&#34;Description:
+            Simplified account creation information
+
+        Args:
+            create_statuses: Output from `create_accounts`
+
+        Example:
+            Example usage:
+
+                from pprint import pprint
+                create_statuses = orgs.create_accounts(&#39;new_accounts.csv&#39;)
+                statuses = orgs.extract_account_statuses(create_statuses)
+                pprint(statuses)
+                {&#39;Failed&#39;: {&#39;demo&#39;: &#39;EMAIL_ALREADY_EXISTS&#39;}, &#39;Succeeded&#39;: [&#39;demo2&#39;]}
+
+        Returns:
+            dict
+        &#34;&#34;&#34;
+
+        self.logger.entry(&#39;info&#39;, f&#39;Extracting account creation statuses...&#39;)
+
+        statuses = {
+            &#39;Succeeded&#39;: [],
+            &#39;Failed&#39;: {},
+        }
+
+        for entry in create_statuses:
+            account_name = entry[&#39;CreateAccountStatus&#39;][&#39;AccountName&#39;]
+            state = entry[&#39;CreateAccountStatus&#39;][&#39;State&#39;]
+
+            if state == &#39;SUCCEEDED&#39;:
+                statuses[&#39;Succeeded&#39;].append(account_name)
+
+            elif state == &#39;FAILED&#39;:
+                failure_reason = entry[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
+                statuses[&#39;Failed&#39;][account_name] = failure_reason
+
+        return statuses</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -591,6 +930,221 @@ Id,Arn,Email,Name,Status,JoinedMethod,JoinedTimestamp
 
     except ClientError as e:
         self._aws_exception_msg(e)</code></pre>
+</details>
+</dd>
+<dt id="onnawsorgs.orgs.Orgs.create_accounts"><code class="name flex">
+<span>def <span class="ident">create_accounts</span></span>(<span>self, input_file_path, sleep_time=5)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Creates AWS accounts using information contained in a CSV file</p>
+<p><code>RoleName</code> defaults to <code>OrganizationAccountAccessRole</code>m and <code>IamUserAccessToBilling</code> defaults to <code>DENY</code></p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>input_file_path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to CSV file</dd>
+</dl>
+<p>sleep_time (int):</p>
+<h2 id="example">Example</h2>
+<p>Example CSV file:</p>
+<pre><code>Email,AccountName,RoleName,IamUserAccessToBilling
+demo@example.com,demo,,
+demo2@example.com,demo2,,
+</code></pre>
+<p>Example usage:</p>
+<pre><code>from pprint import pprint
+create_statuses = orgs.create_accounts('new_accounts.csv')
+pprint(create_statuses)
+[{'CreateAccountStatus': {'AccountName': 'demo',
+                          'CompletedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 40, 484000, tzinfo=tzlocal()),
+                          'FailureReason': 'EMAIL_ALREADY_EXISTS',
+                          'Id': 'fse-jmh342kjdsf9231jhsakdi127rh210la',
+                          'RequestedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 40, 112000, tzinfo=tzlocal()),
+                          'State': 'FAILED'},
+  'ResponseMetadata': {'HTTPHeaders': {'content-length': '222',
+                                       'content-type': 'application/x-amz-json-1.1',
+                                       'date': 'Tue, 14 Apr 2020 00:49:51 GMT',
+                                       'x-amzn-requestid': 'sadjk3-kjdhasjkdh231-asjdhaskdh1'},
+                       'HTTPStatusCode': 200,
+                       'RequestId': 'sadjk3-kjdhasjkdh231-asjdhaskdh1',
+                       'RetryAttempts': 0}},
+ {'CreateAccountStatus': {'AccountId': '123456789012',
+                          'AccountName': 'demo2',
+                          'CompletedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 50, 59000, tzinfo=tzlocal()),
+                          'Id': 's42-kj342ufsdjfhsa87sdfj234821jhi3fd',
+                          'RequestedTimestamp': datetime.datetime(2020, 4, 14, 10, 49, 45, 901000, tzinfo=tzlocal()),
+                          'State': 'SUCCEEDED'},
+  'ResponseMetadata': {'HTTPHeaders': {'content-length': '213',
+                                       'content-type': 'application/x-amz-json-1.1',
+                                       'date': 'Tue, 14 Apr 2020 00:49:51 GMT',
+                                       'x-amzn-requestid': '3245df-dsfe54-435gd-324fds-fswdr4352'},
+                       'HTTPStatusCode': 200,
+                       'RequestId': '3245df-dsfe54-435gd-324fds-fswdr4352',
+                       'RetryAttempts': 0}}]
+</code></pre>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_accounts(self, input_file_path, sleep_time=5) -&gt; list:
+    &#34;&#34;&#34;Description:
+        Creates AWS accounts using information contained in a CSV file
+
+        `RoleName` defaults to `OrganizationAccountAccessRole`m and `IamUserAccessToBilling` defaults to `DENY`
+
+    Args:
+        input_file_path (str): Path to CSV file
+        sleep_time (int):
+
+    Example:
+        Example CSV file:
+
+            Email,AccountName,RoleName,IamUserAccessToBilling
+            demo@example.com,demo,,
+            demo2@example.com,demo2,,
+
+        Example usage:
+
+            from pprint import pprint
+            create_statuses = orgs.create_accounts(&#39;new_accounts.csv&#39;)
+            pprint(create_statuses)
+            [{&#39;CreateAccountStatus&#39;: {&#39;AccountName&#39;: &#39;demo&#39;,
+                                      &#39;CompletedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 40, 484000, tzinfo=tzlocal()),
+                                      &#39;FailureReason&#39;: &#39;EMAIL_ALREADY_EXISTS&#39;,
+                                      &#39;Id&#39;: &#39;fse-jmh342kjdsf9231jhsakdi127rh210la&#39;,
+                                      &#39;RequestedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 40, 112000, tzinfo=tzlocal()),
+                                      &#39;State&#39;: &#39;FAILED&#39;},
+              &#39;ResponseMetadata&#39;: {&#39;HTTPHeaders&#39;: {&#39;content-length&#39;: &#39;222&#39;,
+                                                   &#39;content-type&#39;: &#39;application/x-amz-json-1.1&#39;,
+                                                   &#39;date&#39;: &#39;Tue, 14 Apr 2020 00:49:51 GMT&#39;,
+                                                   &#39;x-amzn-requestid&#39;: &#39;sadjk3-kjdhasjkdh231-asjdhaskdh1&#39;},
+                                   &#39;HTTPStatusCode&#39;: 200,
+                                   &#39;RequestId&#39;: &#39;sadjk3-kjdhasjkdh231-asjdhaskdh1&#39;,
+                                   &#39;RetryAttempts&#39;: 0}},
+             {&#39;CreateAccountStatus&#39;: {&#39;AccountId&#39;: &#39;123456789012&#39;,
+                                      &#39;AccountName&#39;: &#39;demo2&#39;,
+                                      &#39;CompletedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 50, 59000, tzinfo=tzlocal()),
+                                      &#39;Id&#39;: &#39;s42-kj342ufsdjfhsa87sdfj234821jhi3fd&#39;,
+                                      &#39;RequestedTimestamp&#39;: datetime.datetime(2020, 4, 14, 10, 49, 45, 901000, tzinfo=tzlocal()),
+                                      &#39;State&#39;: &#39;SUCCEEDED&#39;},
+              &#39;ResponseMetadata&#39;: {&#39;HTTPHeaders&#39;: {&#39;content-length&#39;: &#39;213&#39;,
+                                                   &#39;content-type&#39;: &#39;application/x-amz-json-1.1&#39;,
+                                                   &#39;date&#39;: &#39;Tue, 14 Apr 2020 00:49:51 GMT&#39;,
+                                                   &#39;x-amzn-requestid&#39;: &#39;3245df-dsfe54-435gd-324fds-fswdr4352&#39;},
+                                   &#39;HTTPStatusCode&#39;: 200,
+                                   &#39;RequestId&#39;: &#39;3245df-dsfe54-435gd-324fds-fswdr4352&#39;,
+                                   &#39;RetryAttempts&#39;: 0}}]
+
+    Returns:
+        list
+    &#34;&#34;&#34;
+    status_ids = []
+
+    self.logger.entry(&#39;info&#39;, f&#39;Creating new accounts as per {input_file_path}...&#39;)
+    new_accounts = csv_to_list(input_file_path)
+
+    for account in new_accounts:
+        email = account[&#39;Email&#39;]
+        account_name = account[&#39;AccountName&#39;]
+        role_name = account.get(&#39;RoleName&#39;) if account.get(&#39;RoleName&#39;) else &#39;OrganizationAccountAccessRole&#39;
+        access_billing = account.get(&#39;IamUserAccessToBilling&#39;) if account.get(&#39;IamUserAccessToBilling&#39;) else &#39;DENY&#39;
+
+        self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
+                                   f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
+
+        create_status = self.org.create_account(
+            Email=email,
+            AccountName=account_name,
+            RoleName=role_name,
+            IamUserAccessToBilling=access_billing
+        )
+
+        if len(new_accounts) &gt; 1:
+            self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation conflicts...&#39;)
+            sleep(sleep_time)
+
+        status_id = create_status[&#39;CreateAccountStatus&#39;][&#39;Id&#39;]
+        status_ids.append(status_id)
+
+    create_statuses = self._get_account_statuses(status_ids)
+
+    self.logger.entry(&#39;debug&#39;, f&#39;Finished creating accounts:\n{pformat(create_statuses)}&#39;)
+
+    return create_statuses</code></pre>
+</details>
+</dd>
+<dt id="onnawsorgs.orgs.Orgs.extract_account_statuses"><code class="name flex">
+<span>def <span class="ident">extract_account_statuses</span></span>(<span>self, create_statuses)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="description">Description</h2>
+<p>Simplified account creation information</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>create_statuses</code></strong></dt>
+<dd>Output from <code>create_accounts</code></dd>
+</dl>
+<h2 id="example">Example</h2>
+<p>Example usage:</p>
+<pre><code>from pprint import pprint
+create_statuses = orgs.create_accounts('new_accounts.csv')
+statuses = orgs.extract_account_statuses(create_statuses)
+pprint(statuses)
+{'Failed': {'demo': 'EMAIL_ALREADY_EXISTS'}, 'Succeeded': ['demo2']}
+</code></pre>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_account_statuses(self, create_statuses) -&gt; dict:
+    &#34;&#34;&#34;Description:
+        Simplified account creation information
+
+    Args:
+        create_statuses: Output from `create_accounts`
+
+    Example:
+        Example usage:
+
+            from pprint import pprint
+            create_statuses = orgs.create_accounts(&#39;new_accounts.csv&#39;)
+            statuses = orgs.extract_account_statuses(create_statuses)
+            pprint(statuses)
+            {&#39;Failed&#39;: {&#39;demo&#39;: &#39;EMAIL_ALREADY_EXISTS&#39;}, &#39;Succeeded&#39;: [&#39;demo2&#39;]}
+
+    Returns:
+        dict
+    &#34;&#34;&#34;
+
+    self.logger.entry(&#39;info&#39;, f&#39;Extracting account creation statuses...&#39;)
+
+    statuses = {
+        &#39;Succeeded&#39;: [],
+        &#39;Failed&#39;: {},
+    }
+
+    for entry in create_statuses:
+        account_name = entry[&#39;CreateAccountStatus&#39;][&#39;AccountName&#39;]
+        state = entry[&#39;CreateAccountStatus&#39;][&#39;State&#39;]
+
+        if state == &#39;SUCCEEDED&#39;:
+            statuses[&#39;Succeeded&#39;].append(account_name)
+
+        elif state == &#39;FAILED&#39;:
+            failure_reason = entry[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
+            statuses[&#39;Failed&#39;][account_name] = failure_reason
+
+    return statuses</code></pre>
 </details>
 </dd>
 <dt id="onnawsorgs.orgs.Orgs.get_accounts"><code class="name flex">
@@ -812,6 +1366,8 @@ for bucket in bucket_list:
 <ul class="">
 <li><code><a title="onnawsorgs.orgs.Orgs.accounts_to_csv" href="#onnawsorgs.orgs.Orgs.accounts_to_csv">accounts_to_csv</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.assume_role" href="#onnawsorgs.orgs.Orgs.assume_role">assume_role</a></code></li>
+<li><code><a title="onnawsorgs.orgs.Orgs.create_accounts" href="#onnawsorgs.orgs.Orgs.create_accounts">create_accounts</a></code></li>
+<li><code><a title="onnawsorgs.orgs.Orgs.extract_account_statuses" href="#onnawsorgs.orgs.Orgs.extract_account_statuses">extract_account_statuses</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.get_accounts" href="#onnawsorgs.orgs.Orgs.get_accounts">get_accounts</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.get_assumed_client" href="#onnawsorgs.orgs.Orgs.get_assumed_client">get_assumed_client</a></code></li>
 <li><code><a title="onnawsorgs.orgs.Orgs.get_assumed_resource" href="#onnawsorgs.orgs.Orgs.get_assumed_resource">get_assumed_resource</a></code></li>
