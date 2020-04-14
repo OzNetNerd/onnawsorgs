@@ -1,6 +1,7 @@
 import boto3
 import sys
 import csv
+import re
 from botocore.exceptions import ClientError
 from pprint import pformat
 from onnmisc import csv_to_list
@@ -198,7 +199,6 @@ class Orgs:
         Returns:
             None
         """
-
         self.logger.entry('info', 'Exporting accounts to CSV file...')
         headers = account_ids[0].keys()
 
@@ -211,7 +211,7 @@ class Orgs:
         """Description:
             Creates AWS accounts using information contained in a CSV file
 
-            `RoleName` defaults to `OrganizationAccountAccessRole`m and `IamUserAccessToBilling` defaults to `DENY`
+            `RoleName` defaults to `OrganizationAccountAccessRole` and `IamUserAccessToBilling` defaults to `DENY`
 
         Args:
             input_file_path (str): Path to CSV file
@@ -341,6 +341,52 @@ class Orgs:
 
         return results
 
+    def get_filtered_accounts(self, regex):
+        """Description:
+            Provides a filtered list of AWS accounts
+
+            Args:
+                regex (str): Regular expression to match the `Name` field
+
+            Example:
+                Example usage:
+
+                    from pprint import pprint
+                    regex = r'(^lab\\d*)'
+                    matched_accounts = orgs.get_filtered_accounts(regex)
+                    pprint(matched_accounts)
+                    [{'Arn': 'arn:aws:organizations::123456789012:account/o-4235gfds3w1/098765432109',
+                      'Email': 'lab44@example.com',
+                      'Id': '789012345678',
+                      'JoinedMethod': 'CREATED',
+                      'JoinedTimestamp': datetime.datetime(2020, 4, 14, 12, 38, 58, 342000, tzinfo=tzlocal()),
+                      'Name': 'lab44',
+                      'Status': 'ACTIVE'}]
+
+            Returns:
+                dict
+        """
+
+        self.logger.entry('info', 'Getting filtered accounts...')
+
+        matched_accounts = []
+        all_accounts = self.get_accounts()
+
+        for account in all_accounts:
+            account_name = account['Name']
+
+            try:
+                re.search(regex, account_name).group(1)
+                self.logger.entry('debug', f'Found match: {account_name}')
+                matched_accounts.append(account)
+
+            except AttributeError:
+                pass
+
+        self.logger.entry('debug', f'Matching accounts:\n{pformat(matched_accounts)}')
+
+        return matched_accounts
+
     def extract_account_statuses(self, create_statuses) -> dict:
         """Description:
             Simplified account creation information
@@ -380,3 +426,4 @@ class Orgs:
 
         self.logger.entry('debug', f'Account statuses:\n{pformat(statuses)}')
         return statuses
+
