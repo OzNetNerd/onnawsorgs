@@ -6,6 +6,7 @@ from pprint import pformat
 from onnmisc import csv_to_list
 from time import sleep
 
+
 class Orgs:
     def __init__(self, logger):
         """Description:
@@ -269,19 +270,25 @@ class Orgs:
             role_name = account.get('RoleName') if account.get('RoleName') else 'OrganizationAccountAccessRole'
             access_billing = account.get('IamUserAccessToBilling') if account.get('IamUserAccessToBilling') else 'DENY'
 
-            self.logger.entry('debug', f'Creating role - Account name: {account_name}, Email: {email}, '
-                                       f'Role: {role_name}, Access to billing: {access_billing}')
+            while True:
+                self.logger.entry('debug', f'Creating role - Account name: {account_name}, Email: {email}, '
+                                           f'Role: {role_name}, Access to billing: {access_billing}')
 
-            create_status = self.org.create_account(
-                Email=email,
-                AccountName=account_name,
-                RoleName=role_name,
-                IamUserAccessToBilling=access_billing
-            )
+                try:
+                    create_status = self.org.create_account(
+                        Email=email,
+                        AccountName=account_name,
+                        RoleName=role_name,
+                        IamUserAccessToBilling=access_billing
+                    )
 
-            if len(new_accounts) > 1:
-                self.logger.entry('debug', f'Sleeping {sleep_time} seconds to avoid account creation conflicts...')
-                sleep(sleep_time)
+                    break
+
+                except ClientError as e:
+                    if e.response['Error']['Code'] == 'ConcurrentModificationException':
+                        self.logger.entry('debug', f'Sleeping {sleep_time} seconds to avoid account creation '
+                                                   f'conflicts...')
+                        sleep(sleep_time)
 
             status_id = create_status['CreateAccountStatus']['Id']
             status_ids.append(status_id)
@@ -292,7 +299,7 @@ class Orgs:
 
         return create_statuses
 
-    def _get_account_statuses(self, status_ids, sleep_time=10) -> list:
+    def _get_account_statuses(self, status_ids, sleep_time=5) -> list:
         """Description:
             Ensures that the account creation process finishes
 
@@ -371,5 +378,5 @@ class Orgs:
                 failure_reason = entry['CreateAccountStatus']['FailureReason']
                 statuses['Failed'][account_name] = failure_reason
 
+        self.logger.entry('debug', f'Account statuses:\n{pformat(statuses)}')
         return statuses
-

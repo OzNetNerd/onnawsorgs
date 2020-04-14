@@ -295,19 +295,25 @@ class Orgs:
             role_name = account.get(&#39;RoleName&#39;) if account.get(&#39;RoleName&#39;) else &#39;OrganizationAccountAccessRole&#39;
             access_billing = account.get(&#39;IamUserAccessToBilling&#39;) if account.get(&#39;IamUserAccessToBilling&#39;) else &#39;DENY&#39;
 
-            self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
-                                       f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
+            while True:
+                self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
+                                           f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
 
-            create_status = self.org.create_account(
-                Email=email,
-                AccountName=account_name,
-                RoleName=role_name,
-                IamUserAccessToBilling=access_billing
-            )
+                try:
+                    create_status = self.org.create_account(
+                        Email=email,
+                        AccountName=account_name,
+                        RoleName=role_name,
+                        IamUserAccessToBilling=access_billing
+                    )
 
-            if len(new_accounts) &gt; 1:
-                self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation conflicts...&#39;)
-                sleep(sleep_time)
+                    break
+
+                except ClientError as e:
+                    if e.response[&#39;Error&#39;][&#39;Code&#39;] == &#39;ConcurrentModificationException&#39;:
+                        self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation &#39;
+                                                   f&#39;conflicts...&#39;)
+                        sleep(sleep_time)
 
             status_id = create_status[&#39;CreateAccountStatus&#39;][&#39;Id&#39;]
             status_ids.append(status_id)
@@ -318,7 +324,7 @@ class Orgs:
 
         return create_statuses
 
-    def _get_account_statuses(self, status_ids, sleep_time=10) -&gt; list:
+    def _get_account_statuses(self, status_ids, sleep_time=5) -&gt; list:
         &#34;&#34;&#34;Description:
             Ensures that the account creation process finishes
 
@@ -379,7 +385,6 @@ class Orgs:
         Returns:
             dict
         &#34;&#34;&#34;
-
         self.logger.entry(&#39;info&#39;, f&#39;Extracting account creation statuses...&#39;)
 
         statuses = {
@@ -398,6 +403,7 @@ class Orgs:
                 failure_reason = entry[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
                 statuses[&#39;Failed&#39;][account_name] = failure_reason
 
+        self.logger.entry(&#39;debug&#39;, f&#39;Account statuses:\n{pformat(statuses)}&#39;)
         return statuses</code></pre>
 </details>
 </section>
@@ -696,19 +702,25 @@ orgs = Orgs(logger)
             role_name = account.get(&#39;RoleName&#39;) if account.get(&#39;RoleName&#39;) else &#39;OrganizationAccountAccessRole&#39;
             access_billing = account.get(&#39;IamUserAccessToBilling&#39;) if account.get(&#39;IamUserAccessToBilling&#39;) else &#39;DENY&#39;
 
-            self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
-                                       f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
+            while True:
+                self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
+                                           f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
 
-            create_status = self.org.create_account(
-                Email=email,
-                AccountName=account_name,
-                RoleName=role_name,
-                IamUserAccessToBilling=access_billing
-            )
+                try:
+                    create_status = self.org.create_account(
+                        Email=email,
+                        AccountName=account_name,
+                        RoleName=role_name,
+                        IamUserAccessToBilling=access_billing
+                    )
 
-            if len(new_accounts) &gt; 1:
-                self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation conflicts...&#39;)
-                sleep(sleep_time)
+                    break
+
+                except ClientError as e:
+                    if e.response[&#39;Error&#39;][&#39;Code&#39;] == &#39;ConcurrentModificationException&#39;:
+                        self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation &#39;
+                                                   f&#39;conflicts...&#39;)
+                        sleep(sleep_time)
 
             status_id = create_status[&#39;CreateAccountStatus&#39;][&#39;Id&#39;]
             status_ids.append(status_id)
@@ -719,7 +731,7 @@ orgs = Orgs(logger)
 
         return create_statuses
 
-    def _get_account_statuses(self, status_ids, sleep_time=10) -&gt; list:
+    def _get_account_statuses(self, status_ids, sleep_time=5) -&gt; list:
         &#34;&#34;&#34;Description:
             Ensures that the account creation process finishes
 
@@ -780,7 +792,6 @@ orgs = Orgs(logger)
         Returns:
             dict
         &#34;&#34;&#34;
-
         self.logger.entry(&#39;info&#39;, f&#39;Extracting account creation statuses...&#39;)
 
         statuses = {
@@ -799,6 +810,7 @@ orgs = Orgs(logger)
                 failure_reason = entry[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
                 statuses[&#39;Failed&#39;][account_name] = failure_reason
 
+        self.logger.entry(&#39;debug&#39;, f&#39;Account statuses:\n{pformat(statuses)}&#39;)
         return statuses</code></pre>
 </details>
 <h3>Methods</h3>
@@ -1054,19 +1066,25 @@ pprint(create_statuses)
         role_name = account.get(&#39;RoleName&#39;) if account.get(&#39;RoleName&#39;) else &#39;OrganizationAccountAccessRole&#39;
         access_billing = account.get(&#39;IamUserAccessToBilling&#39;) if account.get(&#39;IamUserAccessToBilling&#39;) else &#39;DENY&#39;
 
-        self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
-                                   f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
+        while True:
+            self.logger.entry(&#39;debug&#39;, f&#39;Creating role - Account name: {account_name}, Email: {email}, &#39;
+                                       f&#39;Role: {role_name}, Access to billing: {access_billing}&#39;)
 
-        create_status = self.org.create_account(
-            Email=email,
-            AccountName=account_name,
-            RoleName=role_name,
-            IamUserAccessToBilling=access_billing
-        )
+            try:
+                create_status = self.org.create_account(
+                    Email=email,
+                    AccountName=account_name,
+                    RoleName=role_name,
+                    IamUserAccessToBilling=access_billing
+                )
 
-        if len(new_accounts) &gt; 1:
-            self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation conflicts...&#39;)
-            sleep(sleep_time)
+                break
+
+            except ClientError as e:
+                if e.response[&#39;Error&#39;][&#39;Code&#39;] == &#39;ConcurrentModificationException&#39;:
+                    self.logger.entry(&#39;debug&#39;, f&#39;Sleeping {sleep_time} seconds to avoid account creation &#39;
+                                               f&#39;conflicts...&#39;)
+                    sleep(sleep_time)
 
         status_id = create_status[&#39;CreateAccountStatus&#39;][&#39;Id&#39;]
         status_ids.append(status_id)
@@ -1125,7 +1143,6 @@ pprint(statuses)
     Returns:
         dict
     &#34;&#34;&#34;
-
     self.logger.entry(&#39;info&#39;, f&#39;Extracting account creation statuses...&#39;)
 
     statuses = {
@@ -1144,6 +1161,7 @@ pprint(statuses)
             failure_reason = entry[&#39;CreateAccountStatus&#39;][&#39;FailureReason&#39;]
             statuses[&#39;Failed&#39;][account_name] = failure_reason
 
+    self.logger.entry(&#39;debug&#39;, f&#39;Account statuses:\n{pformat(statuses)}&#39;)
     return statuses</code></pre>
 </details>
 </dd>
