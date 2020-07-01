@@ -4,7 +4,7 @@ import csv
 import re
 from botocore.exceptions import ClientError
 from pprint import pformat
-from onnmisc import csv_to_list
+from onnmisc.transformers.csv import csv_to_list
 from time import sleep
 
 

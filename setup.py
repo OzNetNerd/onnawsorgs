@@ -5,7 +5,7 @@ with open('README.md', 'r') as f:
 
 setup(
     name='onnawsorgs',
-    version='0.0.5',
+    version='0.0.6',
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=find_packages(),
